@@ -16,12 +16,18 @@ let BarColr_Selected: Color = .purple
 
 let SortingSpeed: TimeInterval = 0.4
 
-var isRunning = false
 var timer: Timer?
 
+enum Sorting {
+    case bubble, selection, quick, merge, cocktail
+}
+
 struct ContentView: View {
+    @State var isRunning = false
+    @State var isPaused = false
     @State var pickerSelected = 0
     @State var barList: [Bar] = _initializeBarList().shuffled()
+    @State var backLog: [Bar]?
     
     var body: some View {
         ZStack {
@@ -40,6 +46,7 @@ struct ContentView: View {
                     Text("Merge").tag(3)
                     Text("Cocktail").tag(4)
                 }.pickerStyle(SegmentedPickerStyle()).padding(.horizontal)
+                    .disabled(self.isRunning)
                 
                 HStack(spacing: 5) {
                     ForEach(self.barList, id: \.self) { bar in
@@ -51,26 +58,58 @@ struct ContentView: View {
                 
                 HStack(spacing: 30) {
                     Button(action: {
-                        if !isRunning {
+                        if !self.isRunning {
+                            self._startSorting()
+                        } else if self.isRunning && !self.isPaused{
+                            self._pauseResume()
+                        } else if self.isRunning && self.isPaused {
+                            self.isPaused = false
                             self._startSorting()
                         }
                     }) {
-                        Text("Start")
-                            .fontWeight(.heavy)
-                            .font(.system(size: 30))
-                            .foregroundColor(Color.black)
+                        if !self.isRunning {
+                            Text("START")
+                                .fontWeight(.heavy)
+                                .font(.system(size: 30))
+                                .foregroundColor(Color.black)
+                        } else if self.isRunning && !self.isPaused {
+                            Text("STOP")
+                                .fontWeight(.heavy)
+                                .font(.system(size: 30))
+                                .foregroundColor(Color.black)
+                        } else if self.isRunning && self.isPaused {
+                            Text("RESUME")
+                                .fontWeight(.heavy)
+                                .font(.system(size: 30))
+                                .foregroundColor(Color.black)
+                        }
                     }
                     
                     Button(action: {
                         // list shoudn't be shuffled while soring
-                        if !isRunning {
+                        if !self.isRunning {
                             self._shuffleList()
+                        } else if self.isRunning {
+                            timer?.invalidate()
+                            self.isRunning = false
+                            self.isPaused = false
+                            self.barList = self.backLog ?? _initializeBarList()
+                            self.backLog = nil
                         }
                     }) {
-                        Text("Shuffle")
-                            .fontWeight(.heavy)
-                            .font(.system(size: 30))
-                            .foregroundColor(Color.black)
+                        if !isRunning {
+                            Text("SHUFFLE")
+                                .fontWeight(.heavy)
+                                .font(.system(size: 30))
+                                .foregroundColor(!isRunning ? Color.black: Color(#colorLiteral(red: 0.501960814, green: 0.501960814, blue: 0.501960814, alpha: 1)))
+                        } else if isRunning {
+                            // reset button should always be available
+                            // this stop any activity, and reload the bar list
+                            Text("RESET")
+                                .fontWeight(.heavy)
+                                .font(.system(size: 30))
+                                .foregroundColor(Color.black)
+                        }
                     }
                 }
             }
@@ -81,12 +120,15 @@ struct ContentView: View {
     //====================== BUTTONS ACTIONS =====================
     // This performs sorting algorithms, and adjust bar's value to be rendered
     public func _startSorting() -> Void {
+        if backLog == nil {
+            self.backLog = self.barList
+        }
         switch pickerSelected {
-            case 0: _performSorting()
-            case 1: _bubbleSort()
-            case 2: _bubbleSort()
-            case 3: _bubbleSort()
-            case 4: _bubbleSort()
+        case 0: _performSorting(kind: .bubble)
+        case 1: _performSorting(kind: .selection)
+        case 2: _performSorting(kind: .quick)
+        case 3: _performSorting(kind: .merge)
+        case 4: _performSorting(kind: .cocktail)
             default:
                 print("invalid picker input!")
                 self._shuffleList()
@@ -97,14 +139,27 @@ struct ContentView: View {
     private func _shuffleList() -> Void {
         self.barList = _initializeBarList().shuffled()
     }
+    
+    private func _pauseResume() {
+        timer?.invalidate()
+        self.isPaused = true
+    }
     //============================================================
     
     
     //========================= SORTINGS =========================
-    public func _performSorting() {
+    public func _performSorting(kind: Sorting) {
         isRunning = true
         timer = Timer.scheduledTimer(withTimeInterval: SortingSpeed, repeats: true) { timer in
-            self._bubbleSort()
+            // not a good practice, but i think initializing timer everytime would be worse than a repetitive switch
+            // kind wouldn't change within a single _performSorting invocation
+            switch kind {
+            case .bubble: self._bubbleSort()
+            case .selection: self._selectionSort()
+            case .quick: self._quickSort()
+            case .merge: self._mergeSort()
+            case .cocktail: self._cocktailSort()
+            }
         }
     }
     
@@ -120,13 +175,24 @@ struct ContentView: View {
                 }
             }
         }
-        timer?.invalidate() // invalidate timer loop
-        isRunning = false // update running status once sorting is finished
+        endOperation()
     }
     
     // perform selection sort
     public func _selectionSort() -> Void {
-        //
+        let length: Int = self.barList.count
+        var min: Int = 0
+        
+        for i in 1..<length {
+            for j in (i + 1)..<length {
+                if barList[i].value < barList[min].value {
+                    min = j
+                }
+            }
+            self._swap(this: i, that: min)
+            return;
+        }
+        endOperation()
     }
     
     // perform quick sort
@@ -148,10 +214,19 @@ struct ContentView: View {
     
     //========================== UTILS ===========================
     
+    // this swaps two bars based on the given indexes
     func _swap(this: Int, that: Int) -> Void {
         let temp = self.barList[this]
         self.barList[this] = self.barList[that]
         self.barList[that] = temp
+    }
+    
+    // this ends sorting operation, and reset states
+    func endOperation() -> Void {
+        timer?.invalidate() // invalidate timer loop
+        isRunning = false // update running status once sorting is finished
+        isPaused = false
+        backLog = nil
     }
 
     //============================================================
@@ -175,6 +250,7 @@ private func _initializeBarList() -> [Bar] {
     return out
 }
 //========================================================
+
 
 
 
