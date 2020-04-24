@@ -23,8 +23,8 @@ enum Sorting {
     var sortingSpeed: TimeInterval {
         switch self {
         case .bubble:       return 0.4
-        case .selection:   return 1.2
-        case .quick:        return 0.5
+        case .selection:   return 0.8
+        case .quick:        return 1.0
         case .merge:        return 0.5
         case .cocktail:     return 0.5
         }
@@ -67,6 +67,10 @@ struct ContentView: View {
                 
                 HStack(spacing: 30) {
                     Button(action: {
+                        if self._isSorted() {
+                            self._shuffleList()
+                        }
+                        
                         if !self.isRunning {
                             self._startSorting()
                         } else if self.isRunning && !self.isPaused{
@@ -165,7 +169,7 @@ struct ContentView: View {
             switch kind {
             case .bubble: self._bubbleSort()
             case .selection: self._selectionSort()
-            case .quick: self._quickSort()
+            case .quick: self._quickSort(start: 0, end: self.barList.count - 1); if self._isSorted() { self.endOperation() }
             case .merge: self._mergeSort()
             case .cocktail: self._cocktailSort()
             }
@@ -209,8 +213,14 @@ struct ContentView: View {
     }
     
     // perform quick sort
-    public func _quickSort() -> Void {
-        //
+    public func _quickSort(start: Int, end: Int) -> Void {
+        if start < end { // comparing INDEXES
+            let pivot: Int = self._makePartition(low: start, high: end)
+            self.barList[pivot].selected = true
+            
+            self._quickSort(start: start, end: pivot - 1)
+            self._quickSort(start: pivot + 1, end: end)
+        }
     }
     
     // perform merge sort
@@ -225,7 +235,7 @@ struct ContentView: View {
     //============================================================
     
     
-    //========================== UTILS ===========================
+    //====================== UTILS + HELPERS =====================
     
     // this swaps two bars based on the given indexes
     func _swap(this: Int, that: Int) -> Void {
@@ -241,6 +251,32 @@ struct ContentView: View {
         isPaused = false
         backLog = nil
         generalCounter = 0
+    }
+    
+    // This returns an index for a partition in barList array (based on the right-most elem)
+    func _makePartition(low: Int, high: Int) -> Int  {
+        let pivot: Bar = self.barList[high]
+        var smallestIndex: Int = low
+        
+        for i in low..<high {
+            if (self.barList[i].value < pivot.value) {
+                smallestIndex += 1
+            }
+        }
+        
+        self._swap(this: smallestIndex, that: high)
+        
+        return smallestIndex
+    }
+    
+    // validate if barList is sorted properly
+    func _isSorted() -> Bool {
+        for i in 0..<self.barList.count - 1 {
+            if self.barList[i].value > self.barList[i + 1].value {
+                return false
+            }
+        }
+        return true
     }
 
     //============================================================
