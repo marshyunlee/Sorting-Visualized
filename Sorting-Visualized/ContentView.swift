@@ -25,7 +25,7 @@ enum Sorting {
         case .bubble:       return 0.4
         case .selection:   return 0.8
         case .quick:        return 1.0
-        case .merge:        return 0.5
+        case .merge:        return 1.0
         case .cocktail:     return 0.5
         }
     }
@@ -164,13 +164,11 @@ struct ContentView: View {
     public func _performSorting(kind: Sorting) {
         isRunning = true
         timer = Timer.scheduledTimer(withTimeInterval: kind.sortingSpeed, repeats: true) { timer in
-            // i think initializing timer everytime would be worse than a repetitive switch case
-            // kind wouldn't change within a single _performSorting invocation
             switch kind {
             case .bubble: self._bubbleSort()
             case .selection: self._selectionSort()
             case .quick: self._quickSort(start: 0, end: self.barList.count - 1); if self._isSorted() { self.endOperation() }
-            case .merge: self._mergeSort()
+            case .merge: self._mergeSort(start: 0, end: self.barList.count - 1); if self._isSorted() { self.endOperation() }
             case .cocktail: self._cocktailSort()
             }
         }
@@ -224,8 +222,16 @@ struct ContentView: View {
     }
     
     // perform merge sort
-    public func _mergeSort() -> Void {
-        //
+    public func _mergeSort(start: Int, end: Int) -> Void {
+        if start < end {
+            let midPoint: Int = (start + end) / 2
+            self.barList[midPoint].selected = true
+            
+            self._mergeSort(start: start, end: midPoint)
+            self._mergeSort(start: midPoint + 1, end: end)
+         
+            self._merge(left: start, mid: midPoint, right: end)
+        }
     }
     
     // perform cocktail sort
@@ -253,7 +259,18 @@ struct ContentView: View {
         generalCounter = 0
     }
     
-    // This returns an index for a partition in barList array (based on the right-most elem)
+    // validate if barList is sorted properly
+    func _isSorted() -> Bool {
+        for i in 0..<self.barList.count - 1 {
+            if self.barList[i].value > self.barList[i + 1].value {
+                return false
+            }
+        }
+        return true
+    }
+    
+    // Quick sort helper
+    // This returns an index for a partition in barList array (based on the right-most elem) + swaps order
     func _makePartition(low: Int, high: Int) -> Int  {
         let pivot: Bar = self.barList[high]
         var smallestIndex: Int = low
@@ -268,15 +285,42 @@ struct ContentView: View {
         
         return smallestIndex
     }
-    
-    // validate if barList is sorted properly
-    func _isSorted() -> Bool {
-        for i in 0..<self.barList.count - 1 {
-            if self.barList[i].value > self.barList[i + 1].value {
-                return false
+
+    // Merge sort helper
+    // This merges two different subarrays from merge sort
+    func _merge(left: Int, mid: Int, right: Int) -> Void {
+        var leftIndex: Int = left
+        var rightIndex: Int = mid + 1
+        var newIndex: Int = 0
+        
+        var temp: [Bar?] = [Bar?] (repeating: nil, count: right - left + 1)
+        
+        while leftIndex <= mid && rightIndex <= right {
+            if self.barList[leftIndex].value <= self.barList[rightIndex].value {
+                temp[newIndex] = self.barList[leftIndex];
+                leftIndex += 1
+            } else {
+                temp[newIndex] = self.barList[rightIndex];
+                rightIndex += 1
             }
+            newIndex += 1
         }
-        return true
+
+        while leftIndex <= mid {
+            temp[newIndex] = self.barList[leftIndex];
+            newIndex += 1
+            leftIndex += 1
+        }
+
+        while rightIndex <= right {
+            temp[newIndex] = self.barList[rightIndex];
+            newIndex += 1
+            rightIndex += 1
+        }
+
+        for m in left...right {
+            self.barList[m] = temp[m - left] ?? Bar(value: 10, selected: false)
+        }
     }
 
     //============================================================
