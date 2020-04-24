@@ -8,10 +8,10 @@ Bubble, Selection, Quick, Merge and Cocktail sortings, enjoy the algorithmic art
 Full demo video available: https://marshallyunseoklee.com/Portfolio.html
 
 
-![Alt text](https://github.com/Marshall-Yun-Lee/Sorting-Visualized/blob/master/Demo/start.png | width=100)
+![Alt text](https://github.com/Marshall-Yun-Lee/Sorting-Visualized/blob/master/Demo/start.png {:height="700px" width="400px"})
 
 
-![Alt text](https://github.com/Marshall-Yun-Lee/Sorting-Visualized/blob/master/Demo/quick.png | width=100)
+![Alt text](https://github.com/Marshall-Yun-Lee/Sorting-Visualized/blob/master/Demo/quick.png {:height="700px" width="400px"})
 
 
-![Alt text](https://github.com/Marshall-Yun-Lee/Sorting-Visualized/blob/master/Demo/paused.png | width=100)
+![Alt text](https://github.com/Marshall-Yun-Lee/Sorting-Visualized/blob/master/Demo/paused.png {:height="700px" width="400px"})
