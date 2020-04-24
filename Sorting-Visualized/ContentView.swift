@@ -14,12 +14,21 @@ let BarUnit: CGFloat = 10
 let BarColor_Default: Color = .white
 let BarColr_Selected: Color = .purple
 
-let SortingSpeed: TimeInterval = 0.4
-
 var timer: Timer?
+var generalCounter: Int = 0
 
 enum Sorting {
     case bubble, selection, quick, merge, cocktail
+    
+    var sortingSpeed: TimeInterval {
+        switch self {
+        case .bubble:       return 0.4
+        case .selection:   return 1.2
+        case .quick:        return 0.5
+        case .merge:        return 0.5
+        case .cocktail:     return 0.5
+        }
+    }
 }
 
 struct ContentView: View {
@@ -73,7 +82,7 @@ struct ContentView: View {
                                 .font(.system(size: 30))
                                 .foregroundColor(Color.black)
                         } else if self.isRunning && !self.isPaused {
-                            Text("STOP")
+                            Text("PAUSE")
                                 .fontWeight(.heavy)
                                 .font(.system(size: 30))
                                 .foregroundColor(Color.black)
@@ -150,8 +159,8 @@ struct ContentView: View {
     //========================= SORTINGS =========================
     public func _performSorting(kind: Sorting) {
         isRunning = true
-        timer = Timer.scheduledTimer(withTimeInterval: SortingSpeed, repeats: true) { timer in
-            // not a good practice, but i think initializing timer everytime would be worse than a repetitive switch
+        timer = Timer.scheduledTimer(withTimeInterval: kind.sortingSpeed, repeats: true) { timer in
+            // i think initializing timer everytime would be worse than a repetitive switch case
             // kind wouldn't change within a single _performSorting invocation
             switch kind {
             case .bubble: self._bubbleSort()
@@ -181,15 +190,19 @@ struct ContentView: View {
     // perform selection sort
     public func _selectionSort() -> Void {
         let length: Int = self.barList.count
-        var min: Int = 0
         
-        for i in 1..<length {
-            for j in (i + 1)..<length {
-                if barList[i].value < barList[min].value {
-                    min = j
+        for i in generalCounter..<length - 1 {
+            generalCounter += 1
+            var minIndex: Int = i
+            
+            for j in i + 1..<length {
+                if barList[j].value < barList[minIndex].value {
+                    minIndex = j
                 }
             }
-            self._swap(this: i, that: min)
+            self.barList[i].selected = true
+            self.barList[minIndex].selected = true
+            self._swap(this: i, that: minIndex)
             return;
         }
         endOperation()
@@ -227,6 +240,7 @@ struct ContentView: View {
         isRunning = false // update running status once sorting is finished
         isPaused = false
         backLog = nil
+        generalCounter = 0
     }
 
     //============================================================
