@@ -16,6 +16,7 @@ let BarColr_Selected: Color = .purple
 
 var timer: Timer?
 var generalCounter: Int = 0
+var cockTailShaker: Bool = false // this allows to visualize 'cocktail shaker' which takes turns on each end
 
 enum Sorting {
     case bubble, selection, quick, merge, cocktail
@@ -236,7 +237,41 @@ struct ContentView: View {
     
     // perform cocktail sort
     public func _cocktailSort() -> Void {
-        //
+        cockTailShaker = !cockTailShaker
+        var swapped: Bool = true
+        var start: Int = 0
+        var end: Int = self.barList.count
+        
+        while swapped == true {
+            swapped = false;
+
+            for i in start..<end - 1 {
+                if (self.barList[i].value > self.barList[i + 1].value) {
+                    self.barList[i].selected = true
+                    self._swap(this: i, that: i + 1)
+                    swapped = true
+                    if cockTailShaker { return; }
+                }
+            }
+            if swapped == false {
+                break
+            }
+            
+            swapped = false
+            end = self.barList.count - 1;
+            
+            for i in stride(from: end - 1, through: start, by: -1) {
+                if (self.barList[i].value > self.barList[i + 1].value) {
+                    self.barList[i].selected = true
+                    self._swap(this: i, that: i + 1)
+                    swapped = true
+                    if !cockTailShaker { return; }
+                }
+            }
+            start = start + 1;
+        }
+        
+        endOperation()
     }
     //============================================================
     
