@@ -227,12 +227,13 @@ struct ContentView: View {
         if start < end {
             let midPoint: Int = (start + end) / 2
             self.barList[midPoint].selected = true
-            
+
             self._mergeSort(start: start, end: midPoint)
             self._mergeSort(start: midPoint + 1, end: end)
-         
+            
             self._merge(left: start, mid: midPoint, right: end)
         }
+        endOperation()
     }
     
     // perform cocktail sort
